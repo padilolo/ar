@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>DrawAR Kids 🎨</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sky:#5BC8F5;--sun:#FFD93D;--grass:#6BCB77;--coral:#FF6B6B;
+  --purple:#C77DFF;--orange:#FF9F45;--white:#FFFFFF;--dark:#2D3436;
+  --soft:#F0F9FF;
+}
+html,body{width:100%;height:100%;overflow:hidden;touch-action:none}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--soft);
+  display:flex;flex-direction:column;
+  user-select:none;-webkit-user-select:none;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  background:linear-gradient(90deg,var(--coral),var(--orange));
+  padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;z-index:50;
+  box-shadow:0 3px 12px rgba(255,107,107,.35);
+}
+.app-title{
+  font-family:'Fredoka One',cursive;
+  font-size:22px;color:var(--white);
+  letter-spacing:1px;
+  display:flex;align-items:center;gap:8px;
+}
+.app-title span{font-size:26px}
+.topbar-actions{display:flex;gap:8px}
+.icon-btn{
+  background:rgba(255,255,255,.25);border:none;border-radius:50%;
+  width:38px;height:38px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;transition:background .2s,transform .15s;
+  color:var(--white);
+}
+.icon-btn:hover{background:rgba(255,255,255,.4);transform:scale(1.1)}
+.icon-btn:active{transform:scale(.92)}
+
+/* ── CANVAS AREA ── */
+.canvas-wrap{
+  position:relative;flex:1;overflow:hidden;
+  background:#1a1a2e;
+}
+#video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;display:block;
+  transform:scaleX(-1); /* mirror */
+}
+#galleryImg{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;display:none;
+  background:#1a1a2e;
+}
+#drawCanvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  cursor:crosshair;touch-action:none;
+}
+.camera-off-msg{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.7);font-size:16px;gap:12px;
+  pointer-events:none;
+}
+.camera-off-msg .emoji{font-size:56px}
+
+/* ── MODE BADGE ── */
+.mode-badge{
+  position:absolute;top:12px;left:12px;
+  background:rgba(0,0,0,.55);color:#fff;
+  padding:5px 12px;border-radius:20px;
+  font-size:12px;font-weight:700;letter-spacing:.5px;
+  backdrop-filter:blur(6px);
+  pointer-events:none;
+}
+
+/* ── BOTTOM TOOLBAR ── */
+.toolbar{
+  background:var(--white);
+  padding:10px 14px 14px;
+  flex-shrink:0;z-index:50;
+  box-shadow:0 -3px 16px rgba(0,0,0,.1);
+}
+
+/* TOOL TABS */
+.tool-tabs{
+  display:flex;gap:6px;margin-bottom:12px;
+  background:var(--soft);border-radius:14px;padding:4px;
+}
+.tool-tab{
+  flex:1;padding:7px 4px;border:none;border-radius:10px;
+  background:none;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;
+  color:#999;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.tool-tab .tab-icon{font-size:18px}
+.tool-tab.active{background:var(--coral);color:#fff;box-shadow:0 2px 8px rgba(255,107,107,.4)}
+
+/* COLORS */
+.color-row{
+  display:flex;align-items:center;gap:8px;
+  overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none;
+}
+.color-row::-webkit-scrollbar{display:none}
+.color-dot{
+  width:32px;height:32px;border-radius:50%;
+  border:3px solid transparent;cursor:pointer;
+  flex-shrink:0;transition:transform .15s,border-color .15s;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+.color-dot.active{border-color:var(--dark);transform:scale(1.2)}
+.color-dot:active{transform:scale(.9)}
+.custom-color-btn{
+  width:32px;height:32px;border-radius:50%;border:3px dashed #ccc;
+  background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);
+  cursor:pointer;flex-shrink:0;transition:transform .15s;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.custom-color-btn:active{transform:scale(.9)}
+#colorPicker{opacity:0;position:absolute;width:1px;height:1px}
+
+/* SIZE SLIDER */
+.size-row{
+  display:flex;align-items:center;gap:10px;margin-top:8px;
+}
+.size-label{font-size:11px;font-weight:700;color:#aaa;letter-spacing:.5px;white-space:nowrap}
+.size-preview{
+  width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+}
+.size-dot{border-radius:50%;background:var(--dark);transition:all .2s}
+input[type=range]{
+  flex:1;-webkit-appearance:none;height:6px;
+  border-radius:3px;background:linear-gradient(90deg,var(--coral),var(--orange));
+  outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--white);border:3px solid var(--coral);cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+
+/* STICKER PANEL */
+.sticker-panel{display:none}
+.sticker-panel.show{display:block}
+.sticker-grid{
+  display:flex;flex-wrap:wrap;gap:6px;max-height:100px;overflow-y:auto;
+  scrollbar-width:thin;
+}
+.sticker-btn{
+  font-size:28px;background:var(--soft);border:none;border-radius:12px;
+  width:46px;height:46px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,background .15s;
+}
+.sticker-btn:hover{background:#e0f0ff;transform:scale(1.15)}
+.sticker-btn:active{transform:scale(.9)}
+
+/* OPACITY ROW */
+.opacity-row{
+  display:flex;align-items:center;gap:10px;margin-top:8px;
+}
+.opacity-label{font-size:11px;font-weight:700;color:#aaa;white-space:nowrap}
+
+/* ERASER INDICATOR */
+.eraser-active .size-dot{background:#e74c3c!important;opacity:.5}
+
+/* ── GALLERY BUTTON ── */
+#galleryUpload{display:none}
+.fab-gallery{
+  position:absolute;bottom:16px;right:16px;
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--sky));
+  border:none;cursor:pointer;font-size:22px;color:#fff;
+  box-shadow:0 4px 16px rgba(199,125,255,.5);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;z-index:40;
+}
+.fab-gallery:active{transform:scale(.9)}
+
+/* ── POPUP ── */
+.popup-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:200;display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.popup-overlay.show{display:flex}
+.popup{
+  background:var(--white);border-radius:24px;
+  padding:28px 24px;max-width:320px;width:100%;
+  text-align:center;
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.popup h3{font-family:'Fredoka One',cursive;font-size:22px;color:var(--dark);margin-bottom:8px}
+.popup p{font-size:14px;color:#777;margin-bottom:20px;line-height:1.6}
+.popup-btns{display:flex;gap:10px;justify-content:center}
+.popup-btn{
+  padding:10px 20px;border-radius:14px;border:none;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;
+  transition:transform .15s,opacity .15s;
+}
+.popup-btn:active{transform:scale(.95)}
+.popup-btn.primary{background:var(--coral);color:#fff}
+.popup-btn.secondary{background:var(--soft);color:var(--dark)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) scale(.8);
+  background:rgba(30,30,30,.9);color:#fff;
+  padding:9px 20px;border-radius:20px;font-size:13px;font-weight:700;
+  opacity:0;transition:all .3s;z-index:300;white-space:nowrap;
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+
+/* ── FUN STAR CONFETTI ── */
+.confetti-star{
+  position:fixed;font-size:24px;pointer-events:none;z-index:400;
+  animation:fallStar 1.2s ease-in forwards;
+}
+@keyframes fallStar{
+  0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
+  100%{opacity:0;transform:translateY(200px) rotate(360deg) scale(.3)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="app-title"><span>🎨</span> DrawAR Kids</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="toggleCamera()" id="camBtn" title="Kamera">📷</button>
+    <button class="icon-btn" onclick="undoLast()" title="Undo">↩️</button>
+    <button class="icon-btn" onclick="showClearConfirm()" title="Bersihkan">🗑️</button>
+    <button class="icon-btn" onclick="saveDrawing()" title="Simpan">💾</button>
+  </div>
+</div>
+
+<!-- CANVAS AREA -->
+<div class="canvas-wrap" id="canvasWrap">
+  <video id="video" autoplay muted playsinline></video>
+  <img id="galleryImg" alt="Gambar galeri"/>
+  <canvas id="drawCanvas"></canvas>
+  <div class="camera-off-msg" id="camOffMsg" style="display:none">
+    <div class="emoji">📷</div>
+    <div>Izinkan akses kamera<br/>untuk mulai menggambar!</div>
+  </div>
+  <div class="mode-badge" id="modeBadge">📷 Kamera Live</div>
+  <button class="fab-gallery" onclick="document.getElementById('galleryUpload').click()" title="Tambah dari Galeri">🖼️</button>
+</div>
+<input type="file" id="galleryUpload" accept="image/*"/>
+
+<!-- BOTTOM TOOLBAR -->
+<div class="toolbar">
+  <!-- TOOL TABS -->
+  <div class="tool-tabs">
+    <button class="tool-tab active" id="tab-draw" onclick="setTool('draw')">
+      <span class="tab-icon">✏️</span>Gambar
+    </button>
+    <button class="tool-tab" id="tab-eraser" onclick="setTool('eraser')">
+      <span class="tab-icon">🧹</span>Hapus
+    </button>
+    <button class="tool-tab" id="tab-sticker" onclick="setTool('sticker')">
+      <span class="tab-icon">⭐</span>Stiker
+    </button>
+    <button class="tool-tab" id="tab-shape" onclick="setTool('shape')">
+      <span class="tab-icon">🔷</span>Bentuk
+    </button>
+  </div>
+
+  <!-- COLORS -->
+  <div class="color-row" id="colorRow">
+    <div class="color-dot active" style="background:#FF6B6B" data-color="#FF6B6B" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#FF9F45" data-color="#FF9F45" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#FFD93D" data-color="#FFD93D" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#6BCB77" data-color="#6BCB77" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#5BC8F5" data-color="#5BC8F5" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#C77DFF" data-color="#C77DFF" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#FFFFFF" data-color="#FFFFFF" onclick="setColor(this)" style="border:2px solid #ddd"></div>
+    <div class="color-dot" style="background:#2D3436" data-color="#2D3436" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#F8B4D9" data-color="#F8B4D9" onclick="setColor(this)"></div>
+    <div class="color-dot" style="background:#A8E6CF" data-color="#A8E6CF" onclick="setColor(this)"></div>
+    <div class="custom-color-btn" onclick="document.getElementById('colorPicker').click()" title="Warna Lain"></div>
+    <input type="color" id="colorPicker" value="#FF6B6B" onchange="setCustomColor(this.value)"/>
+  </div>
+
+  <!-- SIZE SLIDER -->
+  <div class="size-row" id="sizeRow">
+    <div class="size-label">UKURAN</div>
+    <input type="range" id="sizeSlider" min="2" max="60" value="8" oninput="updateSize(this.value)"/>
+    <div class="size-preview"><div class="size-dot" id="sizeDot" style="width:8px;height:8px"></div></div>
+  </div>
+
+  <!-- OPACITY SLIDER -->
+  <div class="opacity-row" id="opacityRow">
+    <div class="opacity-label">TRANSPARAN</div>
+    <input type="range" id="opacitySlider" min="10" max="100" value="100" oninput="updateOpacity(this.value)"/>
+    <div style="font-size:12px;font-weight:700;color:#aaa;width:36px;text-align:right" id="opacityVal">100%</div>
+  </div>
+
+  <!-- STICKER PANEL -->
+  <div class="sticker-panel" id="stickerPanel">
+    <div class="sticker-grid">
+      <button class="sticker-btn" onclick="selectSticker('⭐')">⭐</button>
+      <button class="sticker-btn" onclick="selectSticker('🌟')">🌟</button>
+      <button class="sticker-btn" onclick="selectSticker('❤️')">❤️</button>
+      <button class="sticker-btn" onclick="selectSticker('🌈')">🌈</button>
+      <button class="sticker-btn" onclick="selectSticker('🦋')">🦋</button>
+      <button class="sticker-btn" onclick="selectSticker('🌸')">🌸</button>
+      <button class="sticker-btn" onclick="selectSticker('🐱')">🐱</button>
+      <button class="sticker-btn" onclick="selectSticker('🐶')">🐶</button>
+      <button class="sticker-btn" onclick="selectSticker('🦄')">🦄</button>
+      <button class="sticker-btn" onclick="selectSticker('🐸')">🐸</button>
+      <button class="sticker-btn" onclick="selectSticker('🌻')">🌻</button>
+      <button class="sticker-btn" onclick="selectSticker('🍎')">🍎</button>
+      <button class="sticker-btn" onclick="selectSticker('🚀')">🚀</button>
+      <button class="sticker-btn" onclick="selectSticker('🎈')">🎈</button>
+      <button class="sticker-btn" onclick="selectSticker('🏠')">🏠</button>
+      <button class="sticker-btn" onclick="selectSticker('✈️')">✈️</button>
+      <button class="sticker-btn" onclick="selectSticker('🌊')">🌊</button>
+      <button class="sticker-btn" onclick="selectSticker('⚡')">⚡</button>
+      <button class="sticker-btn" onclick="selectSticker('🎵')">🎵</button>
+      <button class="sticker-btn" onclick="selectSticker('🎉')">🎉</button>
+    </div>
+  </div>
+
+  <!-- SHAPE PANEL -->
+  <div class="sticker-panel" id="shapePanel">
+    <div class="sticker-grid">
+      <button class="sticker-btn" onclick="selectShape('circle')" title="Lingkaran">⭕</button>
+      <button class="sticker-btn" onclick="selectShape('rect')" title="Kotak">🟥</button>
+      <button class="sticker-btn" onclick="selectShape('triangle')" title="Segitiga">🔺</button>
+      <button class="sticker-btn" onclick="selectShape('star')" title="Bintang">⭐</button>
+      <button class="sticker-btn" onclick="selectShape('heart')" title="Hati">❤️</button>
+      <button class="sticker-btn" onclick="selectShape('line')" title="Garis">➖</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAR CONFIRM POPUP -->
+<div class="popup-overlay" id="clearPopup">
+  <div class="popup">
+    <h3>🗑️ Bersihkan?</h3>
+    <p>Semua gambar akan dihapus.<br/>Yakin mau mulai dari awal?</p>
+    <div class="popup-btns">
+      <button class="popup-btn secondary" onclick="hideClearConfirm()">Batal</button>
+      <button class="popup-btn primary" onclick="clearCanvas()">Ya, Hapus!</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+const video = document.getElementById('video');
+const galleryImg = document.getElementById('galleryImg');
+const canvasWrap = document.getElementById('canvasWrap');
+
+let currentTool = 'draw';
+let currentColor = '#FF6B6B';
+let brushSize = 8;
+let opacity = 1;
+let drawing = false;
+let lastX = 0, lastY = 0;
+let cameraOn = false;
+let stream = null;
+let paths = []; // for undo
+let currentPath = null;
+let selectedSticker = '⭐';
+let selectedShape = 'circle';
+let shapeStart = null;
+let snapshotBeforeShape = null;
+let galleryMode = false;
+
+// ── RESIZE ──
+function resizeCanvas() {
+  const w = canvasWrap.clientWidth;
+  const h = canvasWrap.clientHeight;
+  // Save drawing
+  const img = canvas.toDataURL();
+  canvas.width = w;
+  canvas.height = h;
+  const tempImg = new Image();
+  tempImg.onload = () => ctx.drawImage(tempImg, 0, 0);
+  tempImg.src = img;
+}
+window.addEventListener('resize', resizeCanvas);
+// Initial resize after layout
+setTimeout(() => {
+  canvas.width = canvasWrap.clientWidth;
+  canvas.height = canvasWrap.clientHeight;
+}, 100);
+
+// ── CAMERA ──
+async function toggleCamera() {
+  if (cameraOn) {
+    stopCamera();
+  } else {
+    await startCamera();
+  }
+}
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    galleryImg.style.display = 'none';
+    galleryMode = false;
+    cameraOn = true;
+    document.getElementById('camBtn').textContent = '⏹️';
+    document.getElementById('camOffMsg').style.display = 'none';
+    document.getElementById('modeBadge').textContent = '📷 Kamera Live';
+    showToast('📷 Kamera aktif!');
+  } catch(e) {
+    document.getElementById('camOffMsg').style.display = 'flex';
+    showToast('❌ Izin kamera ditolak');
+  }
+}
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video.srcObject = null;
+  video.style.display = 'none';
+  cameraOn = false;
+  document.getElementById('camBtn').textContent = '📷';
+  document.getElementById('modeBadge').textContent = galleryMode ? '🖼️ Gambar Galeri' : '✏️ Mode Gambar';
+  showToast('📷 Kamera dimatikan');
+}
+
+// Auto-start camera
+startCamera();
+
+// ── GALLERY ──
+document.getElementById('galleryUpload').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    galleryImg.src = ev.target.result;
+    galleryImg.style.display = 'block';
+    galleryImg.style.opacity = '0.85';
+    galleryMode = true;
+    if (cameraOn) stopCamera();
+    video.style.display = 'none';
+    document.getElementById('modeBadge').textContent = '🖼️ Gambar Galeri';
+    showToast('🖼️ Gambar berhasil ditambahkan!');
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+// ── TOOLS ──
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tool).classList.add('active');
+  document.getElementById('stickerPanel').classList.toggle('show', tool === 'sticker');
+  document.getElementById('shapePanel').classList.toggle('show', tool === 'shape');
+  document.getElementById('colorRow').style.display = tool === 'eraser' ? 'none' : 'flex';
+  canvas.style.cursor = tool === 'sticker' ? 'copy' : tool === 'eraser' ? 'cell' : 'crosshair';
+  if (tool === 'sticker') showToast('✨ Tap di layar untuk pasang stiker!');
+  if (tool === 'shape') showToast('🔷 Pilih bentuk lalu gambar!');
+}
+function setColor(el) {
+  currentColor = el.dataset.color;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+}
+function setCustomColor(val) {
+  currentColor = val;
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+}
+function updateSize(v) {
+  brushSize = parseInt(v);
+  const sz = Math.max(6, Math.min(brushSize, 44));
+  document.getElementById('sizeDot').style.width = sz + 'px';
+  document.getElementById('sizeDot').style.height = sz + 'px';
+}
+function updateOpacity(v) {
+  opacity = parseInt(v) / 100;
+  document.getElementById('opacityVal').textContent = v + '%';
+}
+function selectSticker(s) { selectedSticker = s; showToast('Stiker ' + s + ' dipilih!'); }
+function selectShape(s) { selectedShape = s; showToast('Bentuk dipilih! Gambar di layar'); }
+
+// ── DRAWING ──
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const touch = e.touches ? e.touches[0] : e;
+  return {
+    x: (touch.clientX - rect.left) * scaleX,
+    y: (touch.clientY - rect.top) * scaleY
+  };
+}
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('mouseleave', endDraw);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); startDraw(e); }, { passive: false });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); draw(e); }, { passive: false });
+canvas.addEventListener('touchend', e => { e.preventDefault(); endDraw(e); }, { passive: false });
+
+function startDraw(e) {
+  const pos = getPos(e);
+  drawing = true;
+  lastX = pos.x; lastY = pos.y;
+
+  if (currentTool === 'sticker') {
+    placeSticker(pos.x, pos.y);
+    drawing = false; return;
+  }
+  if (currentTool === 'shape') {
+    shapeStart = pos;
+    snapshotBeforeShape = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    return;
+  }
+  // Save snapshot for undo
+  currentPath = ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function draw(e) {
+  if (!drawing) return;
+  const pos = getPos(e);
+
+  if (currentTool === 'shape') {
+    // Preview shape
+    ctx.putImageData(snapshotBeforeShape, 0, 0);
+    drawShape(shapeStart, pos);
+    return;
+  }
+
+  ctx.globalAlpha = currentTool === 'eraser' ? 1 : opacity;
+  ctx.globalCompositeOperation = currentTool === 'eraser' ? 'destination-out' : 'source-over';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = currentColor;
+  ctx.lineWidth = currentTool === 'eraser' ? brushSize * 2 : brushSize;
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+
+  lastX = pos.x; lastY = pos.y;
+}
+
+function endDraw(e) {
+  if (!drawing) return;
+  drawing = false;
+
+  if (currentTool === 'shape' && shapeStart) {
+    const pos = e.touches ? getPos(e.changedTouches ? { touches: [{ clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY }] } : e) : getPos(e);
+    ctx.putImageData(snapshotBeforeShape, 0, 0);
+    drawShape(shapeStart, pos);
+    shapeStart = null;
+    paths.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    return;
+  }
+
+  // Save state for undo
+  if (currentPath) {
+    paths.push(currentPath);
+    if (paths.length > 30) paths.shift();
+    currentPath = null;
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawShape(start, end) {
+  ctx.globalAlpha = opacity;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = currentColor;
+  ctx.fillStyle = currentColor + '44';
+  ctx.lineWidth = brushSize;
+  ctx.lineCap = 'round';
+  const dx = end.x - start.x, dy = end.y - start.y;
+
+  ctx.beginPath();
+  if (selectedShape === 'circle') {
+    const r = Math.sqrt(dx*dx+dy*dy)/2;
+    ctx.arc((start.x+end.x)/2,(start.y+end.y)/2,r,0,Math.PI*2);
+  } else if (selectedShape === 'rect') {
+    ctx.rect(start.x, start.y, dx, dy);
+  } else if (selectedShape === 'triangle') {
+    ctx.moveTo((start.x+end.x)/2, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.lineTo(start.x, end.y);
+    ctx.closePath();
+  } else if (selectedShape === 'star') {
+    drawStar(ctx,(start.x+end.x)/2,(start.y+end.y)/2,Math.abs(dx/2),Math.abs(dx/4),5);
+  } else if (selectedShape === 'heart') {
+    drawHeart(ctx, start.x, start.y, dx, dy);
+  } else if (selectedShape === 'line') {
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+  }
+  ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawStar(ctx, cx, cy, outerR, innerR, points) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = (i * Math.PI) / points - Math.PI / 2;
+    i === 0 ? ctx.moveTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle))
+             : ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+  }
+  ctx.closePath();
+}
+
+function drawHeart(ctx, x, y, w, h) {
+  ctx.beginPath();
+  const cx = x + w/2, cy = y + h/2;
+  ctx.moveTo(cx, cy + Math.abs(h)*0.3);
+  ctx.bezierCurveTo(cx + Math.abs(w)*0.5, cy, cx + Math.abs(w)*0.5, cy - Math.abs(h)*0.4, cx, cy - Math.abs(h)*0.1);
+  ctx.bezierCurveTo(cx - Math.abs(w)*0.5, cy - Math.abs(h)*0.4, cx - Math.abs(w)*0.5, cy, cx, cy + Math.abs(h)*0.3);
+  ctx.closePath();
+}
+
+function placeSticker(x, y) {
+  const saved = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  paths.push(saved);
+  ctx.font = `${brushSize * 4 + 20}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = opacity;
+  ctx.fillText(selectedSticker, x, y);
+  ctx.globalAlpha = 1;
+  spawnConfetti(x, y);
+}
+
+// ── UNDO ──
+function undoLast() {
+  if (paths.length === 0) { showToast('❌ Tidak ada yang bisa di-undo'); return; }
+  const prev = paths.pop();
+  ctx.putImageData(prev, 0, 0);
+  showToast('↩️ Di-undo!');
+}
+
+// ── CLEAR ──
+function showClearConfirm() { document.getElementById('clearPopup').classList.add('show'); }
+function hideClearConfirm() { document.getElementById('clearPopup').classList.remove('show'); }
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  paths = [];
+  hideClearConfirm();
+  showToast('🗑️ Kanvas bersih!');
+}
+
+// ── SAVE ──
+function saveDrawing() {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  const octx = offscreen.getContext('2d');
+
+  // Render background
+  if (cameraOn) {
+    octx.drawImage(video, 0, 0, offscreen.width, offscreen.height);
+  } else if (galleryMode && galleryImg.complete) {
+    // Draw gallery image with contain
+    const iw = galleryImg.naturalWidth, ih = galleryImg.naturalHeight;
+    const cw = offscreen.width, ch = offscreen.height;
+    const scale = Math.min(cw/iw, ch/ih);
+    const w2 = iw * scale, h2 = ih * scale;
+    octx.fillStyle = '#1a1a2e';
+    octx.fillRect(0,0,cw,ch);
+    octx.drawImage(galleryImg, (cw-w2)/2, (ch-h2)/2, w2, h2);
+  } else {
+    octx.fillStyle = '#1a1a2e';
+    octx.fillRect(0,0,offscreen.width,offscreen.height);
+  }
+  // Draw canvas on top
+  octx.drawImage(canvas, 0, 0);
+
+  const link = document.createElement('a');
+  link.download = 'DrawAR-Kids-' + Date.now() + '.png';
+  link.href = offscreen.toDataURL('image/png');
+  link.click();
+  showToast('💾 Gambar tersimpan!');
+  spawnMultiConfetti();
+}
+
+// ── CONFETTI ──
+function spawnConfetti(x, y) {
+  const emojis = ['⭐','🌟','✨','🎉','🌈'];
+  const el = document.createElement('div');
+  el.className = 'confetti-star';
+  el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+  const rect = canvasWrap.getBoundingClientRect();
+  el.style.left = (rect.left + x * rect.width / canvas.width) + 'px';
+  el.style.top = (rect.top + y * rect.height / canvas.height) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+function spawnMultiConfetti() {
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-star';
+      el.textContent = ['⭐','🌟','✨','🎊','🎈'][Math.floor(Math.random()*5)];
+      el.style.left = (20 + Math.random() * 60) + 'vw';
+      el.style.top = '20vh';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1200);
+    }, i * 120);
+  }
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
